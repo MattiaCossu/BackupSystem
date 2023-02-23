@@ -21,7 +21,7 @@ logError() {
 }
 
 # -----------------------------------------------------------------------------
-# Print functions
+# Print functions with colors
 # -----------------------------------------------------------------------------
 
 success(){
@@ -77,7 +77,7 @@ displayUsage() {
 
 	echo ""
 	echo "For more detailed help, please see the README file:"
-	echo ""
+	echo "https://github.com/MattiaCossu/BackupSystem.git"
 	echo ""
 }
 
@@ -107,6 +107,7 @@ checkInstall(){
 			brew install "$package"
 		else
 			error "Operating system not supported. Install $package manualy"
+			logError "Operating system not supported. Install $package manualy"
 			exit 1
 		fi
 		success "Installation $package completed"
@@ -121,6 +122,7 @@ checkDir(){
 		if [ ! -e "$file" ]
 		then
 			error "File: $file does not exist!"
+			logError "File: $file does not exist!"
 			exit 1
 		fi
 	done
@@ -161,6 +163,7 @@ addHost() {
 		#Check if the server already exist in database
 		if grep -q "$ip" "database.csv"; then
 			error "The line already exists in the file"
+			logError "File: $file does not exist!"
 			exit 1
 		fi
 
@@ -173,6 +176,7 @@ addHost() {
 				break
 			else
 				error "Incorrect password. Please try again."
+				logError "File: $file does not exist!"
 			fi
 		done
 
@@ -218,6 +222,7 @@ lsHost() {
 		done < database.csv
 	else
 		error "No server found in database"
+		logError "No server found in database" 
 	fi
 }
 
@@ -247,6 +252,7 @@ manualSingleBackup() {
 					break
 				else
 					error "The $dirbackup directory does not exist or the path is incorrect. Please try again."
+					logWarn "The $dirbackup directory does not exist or the path is incorrect. Please try again."
 				fi
 			done
 			sshpass -p "${data[3]}" rsync --progress -avz -e 'ssh -o "StrictHostKeyChecking=no"' ${data[0]}@${data[1]}:$dirbackup /home/backupmaster/BackupSystem/backup/"$APPNAME-${data[0]}@${data[1]}"
@@ -279,6 +285,7 @@ makeAllBakcupSever() {
 					break
 				else
 					error "The $dirbackup directory does not exist or the path is incorrect. Please try again."
+					logWarn "The $dirbackup directory does not exist or the path is incorrect. Please try again."
 				fi
 			done
 			sshpass -p "${data[3]}" rsync --progress -avz -e 'ssh -o "StrictHostKeyChecking=no"' ${data[0]}@${data[1]}:$dirbackup /home/backupmaster/BackupSystem/backup/"$APPNAME-${data[0]}@${data[1]}"
@@ -324,6 +331,7 @@ setCronJob(){
 					break
 				else
 					error "The $dirbackup directory does not exist or the path is incorrect. Please try again."
+					logWarn "The $dirbackup directory does not exist or the path is incorrect. Please try again."
 				fi
 			done
 			#Ask a frequency crontab
@@ -333,6 +341,7 @@ setCronJob(){
 					break
 				else
 					error "The format of the crontab frequency is incorrect. Please try again or check the instructions."
+					logError "The format of the crontab frequency is incorrect. Please try again or check the instructions."
 				fi
 			done
             local job="$frequency sshpass -p '${data[3]}' rsync --progress -avz -e ssh -o \"StrictHostKeyChecking=no\" ${data[0]}@${data[1]}:$dirbackup /home/backupmaster/BackupSystem/backup/'$APPNAME-${data[0]}@${data[1]}'"
@@ -363,6 +372,7 @@ removeCronJob(){
 	#Check if there are crontabs
 	if [ $num_crontabs -eq 0 ]; then
 		error "There are no crontabs for the current user."
+		logError "There are no crontabs for the current user."
 		exit 1
 	fi
 	
@@ -376,7 +386,8 @@ removeCronJob(){
 		if [[ "$crontab_num" =~ ^[0-9]+$ ]] && [ "$crontab_num" -ge 1 ] && [ "$crontab_num" -le $num_crontabs ]; then
 			break
 		else
-			error "Imsert a valid number."
+			error "Inert a valid number."
+			logError "Insert a valid number."
 		fi
 	done
 
@@ -400,6 +411,7 @@ viewCrontab(){
 	#Check if there are crontabs
 	if [ $num_crontabs -eq 0 ]; then
 		error "There are no crontabs for the current user."
+		logError "There are no crontabs for the current user."
 		exit 1
 	fi
 
