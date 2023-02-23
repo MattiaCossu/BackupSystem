@@ -1,6 +1,7 @@
 # BackupSystem
 
-# Indice
+## technical report
+[technical report](https://docs.google.com/document/d/1NNWn3I1FoA3vRp4QNNsKN4Vl1512Z3y8/edit?usp=sharing&ouid=113482902789782147715&rtpof=true&sd=true)
 
 - [Motivation](#Motivation)
 - [Purpose](#Purpose)
@@ -15,6 +16,8 @@ The Backup Bash System was created to provide a reliable and easy-to-use backup 
 
 ## Purpose
 The Backup Bash System solves the problem of having to manually backup large amounts of data, offering an automatic and customizable system to backup to multiple servers simultaneously. The system can also be used to create scheduled backups using cronjob.
+
+## Tecnical 
 
 ## Installation
 ```bash
