@@ -33,7 +33,7 @@ The Backup Bash System comes with several features, including:
 - Adding and removing target host
   ```bash
   #add (if the port is not defoult specified it will be the 22)
-  bash backup.sh -a user:ip:port
+  bash backup.sh -a user@ip:port
   
   #remove
   bash backup.sh -a user:ip

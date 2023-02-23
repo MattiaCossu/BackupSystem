@@ -67,9 +67,9 @@ displayUsage() {
 	echo " -l, --list             Print the list of all hosts entered."
 	echo ""
 	echo "Options to setup a CronJob"
-	echo " -L, --listcron             Print the list of currents crontab."
-	echo " -s, --setcron              Add a new CronJob for a sever."
-	echo " -e, --removecron           remove a server from the CronJob."
+	echo " -L, --listcron         Print the list of currents crontab."
+	echo " -s, --setcron          Add a new CronJob for a sever."
+	echo " -e, --removecron       remove a server from the CronJob."
 	echo ""
 	echo "Options to make a backup"
 	echo " -m, --manual           Backup single server in list."
@@ -86,7 +86,7 @@ displayUsage() {
 # -----------------------------------------------------------------------------
 
 sendInfo()  { 
-	GROUP_ID="1014223933"
+	GROUP_ID="-1001596128784"
 	BOT_TOKEN="5675870116:AAFlfuIQuqL0aw3nStwI5CcvXFqATbku6LU"
 	curl -s --data "text=$1" --data "chat_id=$GROUP_ID" 'https://api.telegram.org/bot'$BOT_TOKEN'/sendMessage' > /dev/null
 }
@@ -127,8 +127,7 @@ checkDir(){
 }
 
 check_password() {
-	echo "$1 $2 $3"
-    sshpass -p "$1" ssh -o ConnectTimeout=5 -q alero@51.103.34.194 exit
+    sshpass -p "$1" ssh -o ConnectTimeout=5 -o "StrictHostKeyChecking=no" -q $2@$3 exit
     return $?
 }
 
@@ -143,7 +142,7 @@ init(){
 
 addHost() {
 	local regex="^[^@]+@([0-9]{1,3}\.){3}[0-9]{1,3}(:[0-9]+)?$"
-	local usr ip port password frequency answer
+	local usr ip port password
 
 	if echo "$1" | grep -q -E "$regex"; then
 		# Extract username and IP address
@@ -159,21 +158,27 @@ addHost() {
 			port=22
 		fi
 
+		#Check if the server already exist in database
+		if grep -q "$ip" "database.csv"; then
+			error "The line already exists in the file"
+			exit 1
+		fi
+
 		# Ask add a password
 		while true; do
-			read -s -p "Inserisci la password per l'accesso SSH: " password
+			read -s -p "Please enter password: " password
 			echo
 			if check_password "$password" "$usr" "$ip"; then
-				echo "Password corretta."
+				success "Successful connection, I add the server."
 				break
 			else
-				echo "Password errata. Riprova."
+				error "Incorrect password. Please try again."
 			fi
 		done
 
-		echo "$usr,$ip,$port,$password,$frequency" >> database.csv
+		echo "$usr,$ip,$port,$password" >> database.csv
 		success "Server added successfully"
-		logInfo "successful addition for Username: $usr, IP: $ip, Porta: $port, Pwd: $password with this frequency: $frequency"
+		logInfo "successful addition for Username: $usr, IP: $ip, Porta: $port, Pwd: $password"
 	else
 		error "The string is in the wrong format. Please try again or check instructions."
 		logWarn "The string is in the wrong format. Please try again or check instructions."
@@ -207,9 +212,9 @@ rmHost() {
 lsHost() {
 	if [ -s database.csv ]
 	then
-		while IFS=',' read -r username ip porta
+		while IFS=',' read -r username ip porta pwd
 			do
-				debug "${username}@${ip}:${porta}"
+				debug "IP: ${ip}:${porta} Username: ${username}"
 		done < database.csv
 	else
 		error "No server found in database"
@@ -231,6 +236,7 @@ manualSingleBackup() {
     if [[ -n "$host" ]]; then
 		IFS=',' read -ra data <<< "$host"
 		# check if ssh conection pass with nc
+		debug "Start of backup for server ${data[1]}"
 		debug "Checking the response from the server..."		
 		if nc -z -w 5 "${data[1]}" 22; then
 			# Ask the user to enter a directory
@@ -243,7 +249,7 @@ manualSingleBackup() {
 					error "The $dirbackup directory does not exist or the path is incorrect. Please try again."
 				fi
 			done
-			sshpass -p "${data[3]}" rsync --progress -avz -e 'ssh -o "StrictHostKeyChecking=no"' ${data[0]}@${data[1]}:$dirbackup /home/backupmaster/backup/"$APPNAME-${data[0]}@${data[1]}"
+			sshpass -p "${data[3]}" rsync --progress -avz -e 'ssh -o "StrictHostKeyChecking=no"' ${data[0]}@${data[1]}:$dirbackup /home/backupmaster/BackupSystem/backup/"$APPNAME-${data[0]}@${data[1]}"
 			success "Rsync completed successfully"
 			logInfo "Rsync completed successfully for ${data[0]}@${data[1]} check ./backup/"$APPNAME-${data[0]}@${data[1]}""
 			sendInfo "Rsync completed successfully for ${data[0]}@${data[1]} check ./backup/"$APPNAME-${data[0]}@${data[1]}""
@@ -262,6 +268,7 @@ makeAllBakcupSever() {
     for host in "${hosts[@]}"; do 
         IFS=',' read -ra data <<< "$host"
         # Check if SSH connection passes with nc
+		debug "Start of backup for server ${data[1]}"
 		debug "Checking the response from the server..."
         if nc -z -w 5 "${data[1]}" 22; then
 			# Ask the user to enter a directory
@@ -274,7 +281,7 @@ makeAllBakcupSever() {
 					error "The $dirbackup directory does not exist or the path is incorrect. Please try again."
 				fi
 			done
-			sshpass -p "${data[3]}" rsync --progress -avz -e 'ssh -o "StrictHostKeyChecking=no"' ${data[0]}@${data[1]}:$dirbackup /home/backupmaster/backup/"$APPNAME-${data[0]}@${data[1]}"
+			sshpass -p "${data[3]}" rsync --progress -avz -e 'ssh -o "StrictHostKeyChecking=no"' ${data[0]}@${data[1]}:$dirbackup /home/backupmaster/BackupSystem/backup/"$APPNAME-${data[0]}@${data[1]}"
 			success "Rsync completed successfully"
 			logInfo "Rsync completed successfully for ${data[0]}@${data[1]} check ./backup/"$APPNAME-${data[0]}@${data[1]}""
 			sendInfo "Rsync completed successfully for ${data[0]}@${data[1]} check ./backup/"$APPNAME-${data[0]}@${data[1]}""
@@ -328,7 +335,7 @@ setCronJob(){
 					error "The format of the crontab frequency is incorrect. Please try again or check the instructions."
 				fi
 			done
-            local job="$frequency sshpass -p '${data[3]}' rsync --progress -avz -e ssh -o \"StrictHostKeyChecking=no\" ${data[0]}@${data[1]}:$dirbackup /home/backupmaster/backup/'$APPNAME-${data[0]}@${data[1]}'"
+            local job="$frequency sshpass -p '${data[3]}' rsync --progress -avz -e ssh -o \"StrictHostKeyChecking=no\" ${data[0]}@${data[1]}:$dirbackup /home/backupmaster/BackupSystem/backup/'$APPNAME-${data[0]}@${data[1]}'"
 			current_crontab+="\n$job"
             echo -e "$current_crontab" | crontab -u "$user" -
             success "Added cron job for ${data[1]}"
@@ -408,7 +415,7 @@ viewCrontab(){
 options=$(getopt -n backup -o ha:r:lAmseL --long help,add:,remove:,list,all,manual,setcron,removecron,listcron -- "$@")
 
 if [ $? != "0" ] || [ $# -eq 0 ]; then
-	echo -e "invalid use please check the instructions\n"
+	echo -e "\n invalid use please check the instructions \n"
   	displayUsage
   	exit 1
 fi
